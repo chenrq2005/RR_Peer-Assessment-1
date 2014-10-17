@@ -1,0 +1,124 @@
+
+#### title: "PR_assessment1"
+#### author: "Ruiqiang Chen"
+#### date: "Friday, October 17, 2014"
+#### output: html_document
+
+#### This is an R Markdown document for Reproducible Research Peer Assessment #1.
+
+##### 1. Loading and preprocessing the data, the CSV file should be in the directory where this R Markdown file is! The zipped data file could be downloaded from [here] [1]. 
+[1]: https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip "here"
+
+```{r}
+getwd() ### check the active directory for this R markdown to see if the CSV there. 
+data <- read.csv ("activity.csv", header=TRUE) ## read CSV data
+data$date <- as.Date(data$date)
+data1 <- na.omit(data) ## remove observations with NA
+
+```
+
+##### 2. What is mean total number of steps taken per day?
+
+```{r}
+c <- tapply(data1$steps, data1$date, sum)
+hist(c, breaks=20, col= "blue", xlab= "Number of steps per day", ylab= "Frequency", main = "Distribution of number of steps taken each day")
+DF <- data.frame(c)
+names(DF)[1] <- "total_steps"
+mean1 <- mean(DF$total_steps)
+median1 <- median(DF$total_steps)
+cat("mean of total number of steps taken per day is ", mean1)
+cat("mediam of total number of steps taken per day is ", median1)
+```
+
+
+##### 3. What is the average daily activity pattern? 
+
+
+```{r}
+meanstep_interval <- tapply(data1$steps, data1$interval, mean)
+head(meanstep_interval , n=3)
+str(meanstep_interval )
+uniq_interval <- unique(data1$interval)
+plot(uniq_interval, meanstep_interval , type="l", main= "The average daily activity pattern", xlab= "5-minute interval", ylab= "Nubmer of steps", col="blue")
+stepsframe <- data.frame(meanstep_interval , uniq_interval )
+maxstep_interval <- stepsframe[stepsframe$meanstep_interval ==max(meanstep_interval ), ]
+maxstep_interval
+cat("So the 5-minute interval of", maxstep_interval$uniq_interval, ", on average across all the days in the dataset, contains the maximum number of steps ")
+```
+
+##### 4. Inputing missing values, filling in all of the missing values in the dataset to creat a new dataset called 'newdata'.
+#####    4.1 Calculate the missing data in the dataset
+
+```{r}
+numbersNA <- (is.na(data$steps)==TRUE)
+NumbersOfNa <- length(numbersNA[numbersNA==TRUE])
+cat("The total number of rows with NA is", NumbersOfNa)
+```
+
+#####    4.2 filling missing valuess
+
+```{r}
+steps <- c(data$steps)
+steps[is.na(steps)]<- mean1/24/12
+newdata <- data.frame(steps, data$date, data$interval)
+head(newdata, n=3)
+```
+#####    4.3 histogram, mean and mediam for the newdata
+```{r}
+c1 <- tapply(newdata$steps, newdata$data.date, sum)
+hist(c1, breaks=20, col= "blue", xlab= "Number of steps per day", ylab= "Frequency", main = "Total number of steps taken each day for newdata")
+DF1 <- data.frame(c1)
+names(DF1)[1] <- "total_steps2"
+mean2 <- mean(DF1$total_steps2)
+median2 <- median(DF1$total_steps2)
+head(c1)
+cat("mean of total number of steps taken per day of newdata is ", mean2)
+cat("mediam of total number of steps taken per day of newdata is ", median2)
+```
+##### These values are almost same from the estimates from the first part of the assignment. The impact of imputing missing data on the estimates of the total daily number of steps is just increasing the frenqucy number of catologe of 10000-11000 steps per day (mean/mediam value).
+
+##### 5. Are there differences in activity patterns between weekdays and weekends?
+```{r}
+wd <- weekdays(newdata$data.date)
+wd <- as.character(wd)
+str(wd)
+for (i in 1:length(wd)){
+      if(wd[i]=="Saturday" | wd[i]=="Sunday") {
+            wd[i] <- "weekend"
+      } else {
+            wd[i] <- "weekday"
+      }
+}
+wd <- as.factor(wd)
+str(wd)
+newdata[, "days"] <- wd
+str(newdata)
+weekend <- newdata[newdata$days=="weekend",]
+str(weekend)
+c2 <- tapply(weekend$steps, weekend$data.interval, mean)
+
+DF2 <- data.frame(c2)
+DF2[, "days"] <- "weekend"
+interval <- unique(newdata$data.interval)
+DF2[, "interval"] <- interval
+head(DF2)
+str(DF2)
+
+weekday <- newdata[newdata$days=="weekday",]
+str(weekday)
+c3 <- tapply(weekday$steps, weekday$data.interval, mean)
+
+DF3 <- data.frame(c3)
+DF3[, "days"] <- "weekday"
+DF3[, "interval"] <- interval
+head(DF3)
+str(DF3)
+
+par(mfrow =c(2,1))
+par(mar = c(4.5, 15, 1.5, 1.0))
+plot(DF2$interval, DF2$c2, type="l", main = "weekend", xlab="5-minute interval", ylab="Nubmer of steps", col="blue")
+plot(DF3$interval, DF3$c3, type="l", main= "weekday", xlab= "5-minute interval", ylab= "Nubmer of steps", col="red")
+
+cat("Conclusion: there are differences in activity patterns between weekdays and weekends, that is most of 5-minute intervals in weekdend have average steps over 50, but most of 5-minute intervals in weekdays less than 50. ")
+```
+
